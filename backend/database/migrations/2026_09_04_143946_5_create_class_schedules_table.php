@@ -13,11 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('teachers', function (Blueprint $table) {
+        Schema::create('class_schedules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('nip')->unique()->nullable();
-            $table->string('specialization')->nullable();
+            $table->string('class_name');
+            $table->string('subject');
+            $table->string('day');
+            $table->time('time_start');
+            $table->time('time_end');
+            $table->foreignId('teacher_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
     }
@@ -29,6 +32,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('teachers');
+        Schema::dropIfExists('class_schedules');
     }
 };

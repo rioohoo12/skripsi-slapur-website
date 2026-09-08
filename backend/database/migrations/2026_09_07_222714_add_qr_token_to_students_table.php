@@ -13,12 +13,8 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('teachers', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('nip')->unique()->nullable();
-            $table->string('specialization')->nullable();
-            $table->timestamps();
+        Schema::table('students', function (Blueprint $table) {
+            $table->string('qr_token')->nullable()->after('parent_phone');
         });
     }
 
@@ -29,6 +25,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('teachers');
+        Schema::table('students', function (Blueprint $table) {
+            $table->dropColumn('qr_token');
+        });
     }
 };

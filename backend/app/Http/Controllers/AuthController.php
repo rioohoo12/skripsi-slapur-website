@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class AuthController extends Controller
 {
@@ -20,36 +21,39 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'email' => 'required|string|email|ends_with:@gmail.com|max:255|unique:users',
+            'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/^[A-Z].*\d+$/'],
             'gender' => 'required|in:L,P',
             'role' => 'required|string',
+        ];
+
+        $request->validate($rules, [
+            'email.ends_with' => 'Email harus menggunakan domain @gmail.com.',
+            'password.regex' => 'Password harus diawali dengan huruf kapital dan diakhiri dengan angka.'
         ]);
 
-        // Create the user with gender
+        // Create the user with gender and is_active flag = true
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'gender' => $request->gender,
+            'is_active' => true,
         ]);
 
         // Assign requested role
-        $role = Role::where('name', $request->role)->first();
-        if ($role) {
-            $user->assignRole($role);
-        }
+        $role = Role::firstOrCreate(['name' => $request->role, 'guard_name' => 'web']);
+        $user->assignRole($role);
 
         // Specific handling for 'Murid'
         if ($request->role === 'Murid') {
-            // Generate dummy NISN since we don't ask for it in generic form
             Student::create([
                 'user_id' => $user->id,
                 'nisn' => rand(10000000, 99999999), 
                 'gender' => $request->gender,
-                'date_of_birth' => '2005-01-01', // Dummy
+                'date_of_birth' => '2005-01-01',
             ]);
         }
 
@@ -57,11 +61,20 @@ class AuthController extends Controller
         if ($request->role === 'Guru') {
             \App\Models\Teacher::create([
                 'user_id' => $user->id,
-                'nip' => 'NIP' . rand(100000, 999999), // Dummy NIP
+                'nip' => 'NIP' . rand(100000, 999999),
+            ]);
+        }
+        
+        // Specific handling for 'Staff Administrasi'
+        if ($request->role === 'Staff Administrasi') {
+            \App\Models\Staff::create([
+                'user_id' => $user->id,
+                'position' => 'Staff',
+                'department' => $request->department ?? 'Administrasi',
             ]);
         }
 
-        // Send confirmation email
+        // Send confirmation email if possible
         try {
             Mail::to($user->email)->send(new AccountRegistered($user));
         } catch (\Exception $e) {
@@ -71,7 +84,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Registration successful',
+            'message' => 'Pendaftaran akun berhasil!',
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => [
@@ -104,7 +117,7 @@ class AuthController extends Controller
 
         if (!$user->is_active) {
             return response()->json([
-                'message' => 'Akun Anda telah dinonaktifkan. Silakan hubungi Administrator.'
+                'message' => 'Akun Anda belum disetujui (inactive) atau telah dinonaktifkan. Silakan hubungi Administrator.'
             ], 403);
         }
 
@@ -161,7 +174,12 @@ class AuthController extends Controller
      */
     public function forgotPassword(Request $request)
     {
-        $request->validate(['email' => 'required|email|exists:users,email']);
+        $request->validate([
+            'email' => 'required|email|ends_with:@gmail.com|exists:users,email'
+        ], [
+            'email.ends_with' => 'Email harus menggunakan domain @gmail.com.',
+            'email.exists' => 'Email tidak terdaftar.'
+        ]);
         
         $otp = rand(100000, 999999);
         
@@ -175,9 +193,15 @@ class AuthController extends Controller
             ]
         );
 
-        // Dummy send email for OTP
+        // Log OTP
         \Log::info("OTP for {$request->email} is: {$otp}");
-        // In real app: Mail::to($request->email)->send(new OtpSent($otp));
+
+        // Send OTP email
+        try {
+            Mail::to($request->email)->send(new \App\Mail\OtpMail($otp));
+        } catch (\Exception $e) {
+            \Log::error("Failed to send OTP email via SMTP: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Kode OTP telah dikirim ke email Anda.'

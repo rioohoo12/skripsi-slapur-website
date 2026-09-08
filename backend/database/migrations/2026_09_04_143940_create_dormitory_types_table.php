@@ -13,11 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('teachers', function (Blueprint $table) {
+        Schema::create('dormitory_types', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('nip')->unique()->nullable();
-            $table->string('specialization')->nullable();
+            $table->string('name');
+            $table->enum('category', ['sederhana', 'standar']);
+            $table->enum('gender', ['L', 'P']);
+            $table->integer('capacity_per_room');
+            $table->integer('room_count');
             $table->timestamps();
         });
     }
@@ -29,6 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('teachers');
+        Schema::dropIfExists('dormitory_types');
     }
 };

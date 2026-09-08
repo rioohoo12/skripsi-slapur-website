@@ -3,36 +3,47 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\AcademicSchedule;
+use App\Models\ClassSchedule;
 use App\Models\Grade;
 use App\Models\Student;
+use App\Models\Attendance;
 
 class StudentAcademicController extends Controller
 {
-    /**
-     * Get schedules for the student.
-     */
-    public function schedules(Request $request)
+    public function myClass($id)
     {
-        // Currently schedules might be global or per class. 
-        // We'll return all academic schedules for now.
-        $schedules = AcademicSchedule::with('teacher.user')->get();
+        $student = Student::where('user_id', $id)->firstOrFail();
+        $schedules = ClassSchedule::with('teacher.user')->get();
         return response()->json($schedules);
     }
 
-    /**
-     * Get grades for the logged in student.
-     */
-    public function grades(Request $request)
+    public function classSchedule(Request $request)
     {
-        $user = $request->user();
-        $student = Student::where('user_id', $user->id)->first();
+        $schedules = ClassSchedule::with('teacher.user')->get();
+        return response()->json($schedules);
+    }
 
-        if (!$student) {
-            return response()->json(['message' => 'Profil murid tidak ditemukan.'], 404);
+    public function attendance($id)
+    {
+        $student = Student::where('user_id', $id)->firstOrFail();
+        $attendances = Attendance::with('classSchedule.teacher.user')
+            ->where('student_id', $student->id)
+            ->get();
+            
+        return response()->json($attendances);
+    }
+
+    public function gradesByType($id, Request $request)
+    {
+        $student = Student::where('user_id', $id)->firstOrFail();
+        $type = $request->query('type');
+        
+        $query = Grade::with('teacher.user')->where('student_id', $student->id);
+        
+        if ($type) {
+            $query->where('grade_type', $type);
         }
-
-        $grades = Grade::with('teacher.user')->where('student_id', $student->id)->get();
-        return response()->json($grades);
+        
+        return response()->json($query->get());
     }
 }

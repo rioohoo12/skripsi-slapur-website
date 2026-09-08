@@ -13,11 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('teachers', function (Blueprint $table) {
+        Schema::create('qr_scan_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('nip')->unique()->nullable();
-            $table->string('specialization')->nullable();
+            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            $table->string('scan_type'); // e.g. 'dining', 'room'
+            $table->timestamp('scanned_at');
+            $table->foreignId('scanned_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }
@@ -29,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('teachers');
+        Schema::dropIfExists('qr_scan_logs');
     }
 };

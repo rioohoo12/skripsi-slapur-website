@@ -1,6 +1,8 @@
 <template>
   <div class="glass-panel login-card">
     <div class="login-header">
+      <img src="../../logo slapur.jpg" alt="Slapur Logo" class="auth-logo" />
+      <h1 class="academic-title">SLAPUR ACADEMIC</h1>
       <h2>Lupa Password</h2>
       <p v-if="step === 1">Masukkan email Anda untuk menerima OTP</p>
       <p v-else>Masukkan OTP dan password baru Anda</p>
@@ -18,7 +20,7 @@
     <form v-if="step === 1" @submit.prevent="requestOtp">
       <div class="form-group">
         <label class="form-label">Email terdaftar</label>
-        <input type="email" v-model="form.email" class="form-input" placeholder="contoh@slapur.com" required />
+        <input type="email" v-model="form.email" class="form-input" placeholder="contoh@gmail.com" required />
       </div>
       
       <button type="submit" class="btn btn-primary w-full" :disabled="loading">
@@ -122,6 +124,8 @@ const resetPassword = async () => {
 <style scoped>
 .login-card { padding: 2.5rem; }
 .login-header { text-align: center; margin-bottom: 2rem; }
+.auth-logo { width: 80px; height: auto; margin: 0 auto 1rem; display: block; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
+.academic-title { font-size: 1.25rem; font-weight: 800; color: var(--primary, #10b981); margin-bottom: 0.5rem; letter-spacing: 2px; }
 .login-header h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: white; }
 .w-full { width: 100%; }
 

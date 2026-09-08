@@ -13,11 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('teachers', function (Blueprint $table) {
+        Schema::create('registration_progress', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('nip')->unique()->nullable();
-            $table->string('specialization')->nullable();
+            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            $table->enum('step0_status', ['pending', 'paid'])->default('pending');
+            $table->enum('step1_status', ['pending', 'paid'])->default('pending');
+            $table->enum('step2_status', ['pending', 'completed'])->default('pending');
             $table->timestamps();
         });
     }
@@ -29,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('teachers');
+        Schema::dropIfExists('registration_progress');
     }
 };

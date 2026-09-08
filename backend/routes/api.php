@@ -36,15 +36,28 @@ Route::middleware('auth:sanctum')->group(function () {
     // Murid Only Routes
     Route::middleware('role:Murid')->group(function () {
         Route::get('/murid/dashboard', function() { return response()->json(['message' => 'Welcome Murid']); });
+        Route::get('/students/{id}/dashboard', [StudentDashboardController::class, 'dashboard']);
+        Route::get('/students/{id}/finance', [StudentDashboardController::class, 'finance']);
+        Route::get('/students/{id}/meal-card', [StudentDashboardController::class, 'mealCard']);
+        Route::get('/students/{id}/meal-reports', [StudentDashboardController::class, 'mealReports']);
+        Route::get('/students/{id}/qr', [StudentDashboardController::class, 'qr']);
         
         // Rooms
         Route::get('/rooms/available', [RoomController::class, 'availableRooms']);
         Route::post('/rooms/assign', [RoomController::class, 'assignRoom']);
         Route::get('/rooms/my', [RoomController::class, 'myRoom']);
         
-        // Academic
-        Route::get('/academic/schedules', [StudentAcademicController::class, 'schedules']);
-        Route::get('/academic/grades', [StudentAcademicController::class, 'grades']);
+        // Academic (Bagian 2)
+        Route::get('/students/{id}/academic/my-class', [StudentAcademicController::class, 'myClass']);
+        Route::get('/academic/class-schedule', [StudentAcademicController::class, 'classSchedule']);
+        Route::get('/students/{id}/attendance', [StudentAcademicController::class, 'attendance']);
+        Route::get('/students/{id}/grades', [StudentAcademicController::class, 'gradesByType']);
+        
+        // Registration (Bagian 3)
+        Route::get('/students/{id}/registration-progress', [\App\Http\Controllers\RegistrationController::class, 'progress']);
+        Route::post('/students/{id}/registration-application', [\App\Http\Controllers\RegistrationController::class, 'submitApplication']);
+        Route::get('/students/{id}/dormitory-options', [\App\Http\Controllers\RegistrationController::class, 'dormitoryOptions']);
+        Route::post('/students/{id}/dormitory-selection', [\App\Http\Controllers\RegistrationController::class, 'dormitorySelection']);
         
         // Payment
         Route::post('/payment/create', [PaymentController::class, 'createTransaction']);

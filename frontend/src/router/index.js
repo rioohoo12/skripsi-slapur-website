@@ -21,6 +21,7 @@ const routes = [
   {
     path: '/login',
     component: AuthLayout,
+    redirect: '/login/murid',
     children: [
       { path: 'murid', component: Login, meta: { role: 'Murid' } },
       { path: 'guru', component: Login, meta: { role: 'Guru' } },
@@ -54,8 +55,11 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: '', redirect: to => {
-          const authStore = JSON.parse(localStorage.getItem('auth') || '{}');
-          const role = authStore?.user?.role?.toLowerCase() || 'murid';
+          let user = null;
+          try {
+            user = JSON.parse(localStorage.getItem('user')) || JSON.parse(sessionStorage.getItem('user'));
+          } catch(e) {}
+          const role = user?.role?.toLowerCase() || 'murid';
           return `/dashboard/${role === 'staff administrasi' ? 'staff' : role}`;
       }},
       {
@@ -63,9 +67,22 @@ const routes = [
         component: Dashboard,
         meta: { role: 'Murid' },
         children: [
+          { path: '', component: () => import('../views/dashboard/murid/DashboardHome.vue') },
+          { path: 'krs', name: 'KRS', component: () => import('../views/dashboard/Placeholder.vue') },
+          { path: 'profile', name: 'Profil Saya', component: () => import('../views/dashboard/murid/Profile.vue') },
+          { path: 'schedule', name: 'Jadwal Kuliah', component: () => import('../views/dashboard/murid/Schedule.vue') },
+          { path: 'calendar', name: 'Kalender Akademik', component: () => import('../views/dashboard/murid/AcademicCalendar.vue') },
+          { path: 'transcript', name: 'Transkrip Nilai', component: () => import('../views/dashboard/murid/Transcript.vue') },
+          { path: 'billing', name: 'Tagihan & Pembayaran', component: () => import('../views/dashboard/murid/Billing.vue') },
+          { path: 'announcements', name: 'Pengumuman', component: () => import('../views/dashboard/murid/Announcements.vue') },
+          { path: 'settings', name: 'Pengaturan', component: () => import('../views/dashboard/Placeholder.vue') },
+          { path: 'registration', component: () => import('../views/dashboard/murid/RegistrationStatus.vue') },
+          { path: 'registration/application', component: () => import('../views/dashboard/murid/RegistrationApplication.vue') },
+          { path: 'finance', component: () => import('../views/dashboard/murid/Finance.vue') },
+          { path: 'cafeteria', component: () => import('../views/dashboard/murid/Cafeteria.vue') },
           { path: 'rooms', component: () => import('../views/dashboard/murid/RoomSelection.vue') },
-          { path: 'payment', component: () => import('../views/dashboard/murid/Payment.vue') },
-          { path: 'academic', component: () => import('../views/dashboard/murid/Academic.vue') }
+          { path: 'academic', name: 'Nilai', component: () => import('../views/dashboard/murid/Academic.vue') },
+          { path: 'qr', component: () => import('../views/dashboard/murid/QrProfile.vue') }
         ]
       },
       {

@@ -13,6 +13,7 @@ return new class extends Migration
                         $table->foreignId('student_id')->constrained()->cascadeOnDelete();
             $table->foreignId('teacher_id')->constrained()->cascadeOnDelete();
             $table->string('subject_name');
+            $table->enum('grade_type', ['kuis', 'tugas', 'ujian_harian', 'ujian_mid', 'ujian_final']);
             $table->string('semester');
             $table->decimal('score', 5, 2);
             $table->timestamps();

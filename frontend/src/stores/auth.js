@@ -1,17 +1,30 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 
-// Configure default axios base URL
-axios.defaults.baseURL = 'http://localhost:8000/api';
-axios.defaults.withCredentials = true; // For sanctum CSRF if needed
+// Configure default axios base URL and headers
+axios.defaults.baseURL = 'http://127.0.0.1:8000/api';
+axios.defaults.headers.common['Accept'] = 'application/json';
+
+// Setup initial auth header if token exists
+const initialToken = localStorage.getItem('token') || sessionStorage.getItem('token');
+if (initialToken) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`;
+}
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null,
-    loading: false,
-    error: null
-  }),
+  state: () => {
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem('user')) || JSON.parse(sessionStorage.getItem('user'));
+    } catch(e) {}
+    
+    return {
+      user: user,
+      token: initialToken,
+      loading: false,
+      error: null
+    };
+  },
 
   getters: {
     isAuthenticated: (state) => !!state.token,
@@ -19,11 +32,17 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    setAuth(token, user) {
+    setAuth(token, user, rememberMe = true) {
       this.token = token;
       this.user = user;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      
+      if (rememberMe) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+      } else {
+        sessionStorage.setItem('token', token);
+        sessionStorage.setItem('user', JSON.stringify(user));
+      }
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     },
 
@@ -32,10 +51,12 @@ export const useAuthStore = defineStore('auth', {
       this.user = null;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       delete axios.defaults.headers.common['Authorization'];
     },
 
-    async login(email, password, role) {
+    async login(email, password, role, rememberMe = true) {
       this.loading = true;
       this.error = null;
       
@@ -43,7 +64,7 @@ export const useAuthStore = defineStore('auth', {
         const response = await axios.post('/login', { email, password, role });
         const { access_token, user } = response.data;
         
-        this.setAuth(access_token, user);
+        this.setAuth(access_token, user, rememberMe);
         return true;
       } catch (err) {
         this.error = err.response?.data?.message || err.response?.data?.errors?.email?.[0] || 'Terjadi kesalahan saat login.';

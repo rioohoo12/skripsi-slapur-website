@@ -83,12 +83,13 @@ class DatabaseSeeder extends Seeder
             'department' => 'Dormitory'
         ]);
 
-        // 4. Rooms & Assignments
-        $room = Room::create([
-            'name' => 'Asrama Putra A1',
-            'capacity' => 4,
-            'gender_type' => 'L'
+        $this->call([
+            DormitoryTypeSeeder::class,
+            RoomSeeder::class,
         ]);
+
+        // 4. Rooms & Assignments
+        $room = Room::first(); // Use the first seeded room
 
         RoomAssignment::create([
             'room_id' => $room->id,
@@ -111,6 +112,7 @@ class DatabaseSeeder extends Seeder
             'student_id' => $student->id,
             'teacher_id' => $teacher->id,
             'subject_name' => 'Matematika Dasar',
+            'grade_type' => 'ujian_mid',
             'semester' => 'Ganjil',
             'score' => 85.50
         ]);

@@ -31,10 +31,14 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Profil murid tidak ditemukan.'], 404);
         }
 
-        // Dummy create payment record
+        $spp = 500000;
+        $dining = 300000;
+        $asrama = ($student->dormitory_preference === 'standar') ? 400000 : 200000;
+        $total = $spp + $dining + $asrama;
+
         $payment = Payment::create([
             'student_id' => $student->id,
-            'amount' => 1500000,
+            'amount' => $total,
             'payment_date' => now(),
             'type' => 'tuition',
             'status' => 'pending'
@@ -43,7 +47,7 @@ class PaymentController extends Controller
         $params = array(
             'transaction_details' => array(
                 'order_id' => 'ORDER-' . $payment->id . '-' . time(),
-                'gross_amount' => 1500000,
+                'gross_amount' => $total,
             ),
             'customer_details' => array(
                 'first_name' => $user->name,
@@ -58,5 +62,63 @@ class PaymentController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
+    }
+
+    public function notification(Request $request)
+    {
+        $payload = $request->all();
+        $orderId = $payload['order_id'];
+        $statusCode = $payload['status_code'];
+        $grossAmount = $payload['gross_amount'];
+        $transactionStatus = $payload['transaction_status'];
+        
+        // order_id format is ORDER-{payment_id}-{time}
+        $parts = explode('-', $orderId);
+        $paymentId = $parts[1] ?? null;
+        
+        if (!$paymentId) return response()->json(['message' => 'Invalid order ID'], 400);
+        
+        $payment = Payment::find($paymentId);
+        if (!$payment) return response()->json(['message' => 'Payment not found'], 404);
+
+        if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
+            $payment->update(['status' => 'paid']);
+            
+            // Update Registration Progress
+            $progress = \App\Models\RegistrationProgress::where('student_id', $payment->student_id)->first();
+            if ($progress) {
+                $progress->step0_status = 'paid';
+                $progress->step1_status = 'paid';
+                $progress->save();
+                
+                // Create Meal Card (Bagian 5)
+                \App\Models\MealCard::firstOrCreate(
+                    ['student_id' => $payment->student_id],
+                    ['card_number' => (string)$payment->student_id]
+                );
+            }
+            
+            // Insert into Financial Transactions and calculate running balance
+            $lastTransaction = \App\Models\FinancialTransaction::where('student_id', $payment->student_id)
+                                ->orderBy('created_at', 'desc')
+                                ->orderBy('id', 'desc')
+                                ->first();
+            $lastBalance = $lastTransaction ? $lastTransaction->balance : 0;
+            $newBalance = $lastBalance + $payment->amount; // Pembayaran Pendaftaran is a credit/deposit
+            
+            \App\Models\FinancialTransaction::create([
+                'student_id' => $payment->student_id,
+                'date' => now()->toDateString(),
+                'description' => 'Pembayaran Pendaftaran (SPP + Makan + Asrama)',
+                'debit' => 0,
+                'credit' => $payment->amount,
+                'balance' => $newBalance
+            ]);
+            
+        } else if ($transactionStatus == 'cancel' || $transactionStatus == 'deny' || $transactionStatus == 'expire') {
+            $payment->update(['status' => 'failed']);
+        }
+
+        return response()->json(['message' => 'OK']);
     }
 }

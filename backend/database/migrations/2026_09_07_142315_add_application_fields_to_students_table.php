@@ -13,12 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('teachers', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('nip')->unique()->nullable();
-            $table->string('specialization')->nullable();
-            $table->timestamps();
+        Schema::table('students', function (Blueprint $table) {
+            $table->string('class_name')->nullable();
+            $table->enum('dormitory_preference', ['sederhana', 'standar'])->nullable();
         });
     }
 
@@ -29,6 +26,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('teachers');
+        Schema::table('students', function (Blueprint $table) {
+            $table->dropColumn(['class_name', 'dormitory_preference']);
+        });
     }
 };

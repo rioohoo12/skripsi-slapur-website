@@ -10,9 +10,10 @@ return new class extends Migration
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
-                        $table->string('name');
+            $table->foreignId('dormitory_type_id')->constrained()->cascadeOnDelete();
+            $table->string('room_number');
             $table->integer('capacity');
-            $table->enum('gender_type', ['L', 'P']);
+            $table->integer('occupied_count')->default(0);
             $table->timestamps();
         });
     }

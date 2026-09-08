@@ -5,14 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Attendance extends Model
+class RegistrationProgress extends Model
 {
     use HasFactory;
     
+    protected $table = 'registration_progress';
     protected $guarded = [];
-
-    public function classSchedule()
-    {
-        return $this->belongsTo(ClassSchedule::class, 'class_schedule_id');
-    }
 }

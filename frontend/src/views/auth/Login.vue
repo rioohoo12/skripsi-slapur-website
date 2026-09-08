@@ -1,8 +1,14 @@
 <template>
   <div class="glass-panel login-card">
     <div class="login-header">
+      <img src="../../logo slapur.jpg" alt="Slapur Logo" class="auth-logo" />
+      <h1 class="academic-title">SLAPUR ACADEMIC</h1>
       <h2>Login {{ roleName }}</h2>
       <p>Masuk ke portal Slapur</p>
+    </div>
+    
+    <div v-if="route.query.registered" class="alert alert-success">
+      Akun berhasil dibuat! Silakan masuk menggunakan email dan password Anda.
     </div>
     
     <div v-if="authStore.error" class="alert alert-error">
@@ -16,7 +22,7 @@
           type="email" 
           v-model="email" 
           class="form-input" 
-          placeholder="contoh@slapur.com"
+          placeholder="contoh@gmail.com"
           required
         />
       </div>
@@ -31,6 +37,13 @@
           required
         />
       </div>
+
+      <div class="form-group remember-me">
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="rememberMe" />
+          <span>Ingat Saya</span>
+        </label>
+      </div>
       
       <button type="submit" class="btn btn-primary w-full" :disabled="authStore.loading">
         <span v-if="authStore.loading">Memproses...</span>
@@ -41,16 +54,6 @@
     <div class="auth-links">
       <router-link :to="'/forgot-password/' + routeRole" class="link">Lupa Password?</router-link>
       <router-link :to="'/register/' + routeRole" class="link">Belum punya akun? <strong>Daftar di sini</strong></router-link>
-    </div>
-    
-    <div class="role-switcher">
-      <p>Bukan {{ roleName }}?</p>
-      <div class="role-links">
-        <router-link v-if="roleName !== 'Murid'" to="/login/murid">Murid</router-link>
-        <router-link v-if="roleName !== 'Guru'" to="/login/guru">Guru</router-link>
-        <router-link v-if="roleName !== 'Staff Administrasi'" to="/login/staff">Staff</router-link>
-        <router-link v-if="roleName !== 'Admin'" to="/login/admin">Admin</router-link>
-      </div>
     </div>
   </div>
 </template>
@@ -66,6 +69,7 @@ const authStore = useAuthStore();
 
 const email = ref('');
 const password = ref('');
+const rememberMe = ref(true);
 
 const roleName = computed(() => route.meta.role);
 const routeRole = computed(() => {
@@ -73,10 +77,9 @@ const routeRole = computed(() => {
 });
 
 const handleLogin = async () => {
-  const success = await authStore.login(email.value, password.value, roleName.value);
+  const success = await authStore.login(email.value, password.value, roleName.value, rememberMe.value);
   if (success) {
-    let routeRole = roleName.value === 'Staff Administrasi' ? 'staff' : roleName.value.toLowerCase();
-    router.push(`/dashboard/${routeRole}`);
+    router.push(`/dashboard/${routeRole.value}`);
   }
 };
 </script>
@@ -91,11 +94,39 @@ const handleLogin = async () => {
   margin-bottom: 2rem;
 }
 
+.auth-logo {
+  width: 80px;
+  height: auto;
+  margin: 0 auto 1rem;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.academic-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary, #10b981);
+  margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+}
+
 .login-header h2 {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
   color: white;
+}
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid #10b981;
+  color: #34d399;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
 }
 
 .w-full {
@@ -152,5 +183,26 @@ const handleLogin = async () => {
 
 .link strong:hover {
   color: var(--primary-hover);
+}
+
+.remember-me {
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  accent-color: var(--primary);
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
 }
 </style>

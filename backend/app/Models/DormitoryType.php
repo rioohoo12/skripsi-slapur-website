@@ -5,14 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Attendance extends Model
+class DormitoryType extends Model
 {
     use HasFactory;
     
     protected $guarded = [];
-
-    public function classSchedule()
-    {
-        return $this->belongsTo(ClassSchedule::class, 'class_schedule_id');
-    }
 }

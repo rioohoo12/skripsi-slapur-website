@@ -73,7 +73,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted } from 'vue';
-import api from '../services/api';
+import axios from 'axios';
 
 const isOpen = ref(false);
 const newMessage = ref('');
@@ -131,7 +131,7 @@ const sendMessage = async () => {
   scrollToBottom();
 
   try {
-    const response = await api.post('/chatbot/message', { message: text });
+    const response = await axios.post('/chatbot/message', { message: text });
     
     messages.value.push({
       role: 'bot',

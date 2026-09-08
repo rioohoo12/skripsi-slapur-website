@@ -1,8 +1,14 @@
 <template>
   <div class="glass-panel login-card">
     <div class="login-header">
+      <img src="../../logo slapur.jpg" alt="Slapur Logo" class="auth-logo" />
+      <h1 class="academic-title">SLAPUR ACADEMIC</h1>
       <h2>Daftar Akun {{ roleName }}</h2>
       <p>Buat akun baru portal Slapur</p>
+    </div>
+    
+    <div v-if="successMsg" class="alert alert-success">
+      {{ successMsg }}
     </div>
     
     <div v-if="error" class="alert alert-error">
@@ -23,15 +29,27 @@
           <option value="P">Perempuan</option>
         </select>
       </div>
+
+      <div v-if="roleName === 'Staff Administrasi'" class="form-group">
+        <label class="form-label">Jenis Staff</label>
+        <select v-model="form.department" class="form-input select-input" required>
+          <option value="" disabled>Pilih Jenis Staff</option>
+          <option value="Administrasi">Staff Administrasi</option>
+          <option value="Dining">Staff Dining</option>
+          <option value="Asrama">Staff Asrama</option>
+        </select>
+      </div>
       
       <div class="form-group">
         <label class="form-label">Email</label>
-        <input type="email" v-model="form.email" class="form-input" placeholder="contoh@slapur.com" required />
+        <input type="email" v-model="form.email" class="form-input" placeholder="contoh@gmail.com" required @input="validateEmail" />
+        <small v-if="emailError" class="text-error mt-1 block">{{ emailError }}</small>
       </div>
       
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input type="password" v-model="form.password" class="form-input" placeholder="••••••••" required />
+        <input type="password" v-model="form.password" class="form-input" placeholder="••••••••" required @input="validatePassword" />
+        <small v-if="passwordError" class="text-error mt-1 block">{{ passwordError }}</small>
       </div>
 
       <div class="form-group">
@@ -39,7 +57,7 @@
         <input type="password" v-model="form.password_confirmation" class="form-input" placeholder="••••••••" required />
       </div>
       
-      <button type="submit" class="btn btn-primary w-full" :disabled="loading">
+      <button type="submit" class="btn btn-primary w-full" :disabled="loading || !!passwordError || !!emailError">
         <span v-if="loading">Memproses...</span>
         <span v-else>Daftar Sekarang</span>
       </button>
@@ -72,28 +90,66 @@ const form = ref({
   email: '',
   password: '',
   password_confirmation: '',
-  role: roleName.value
+  department: ''
 });
 
 const loading = ref(false);
 const error = ref(null);
+const successMsg = ref(null);
+const passwordError = ref('');
+const emailError = ref('');
+
+const validateEmail = () => {
+  if (!form.value.email) {
+    emailError.value = '';
+    return;
+  }
+  if (!form.value.email.toLowerCase().endsWith('@gmail.com')) {
+    emailError.value = 'Email harus menggunakan domain @gmail.com';
+  } else {
+    emailError.value = '';
+  }
+};
+
+const validatePassword = () => {
+  const regex = /^[A-Z].*\d+$/;
+  if (form.value.password.length < 8) {
+    passwordError.value = "Password minimal 8 karakter.";
+  } else if (!regex.test(form.value.password)) {
+    passwordError.value = "Password harus diawali huruf kapital dan diakhiri angka.";
+  } else {
+    passwordError.value = "";
+  }
+};
 
 const handleRegister = async () => {
+  validateEmail();
+  validatePassword();
+  if (passwordError.value || emailError.value) return;
+  
   loading.value = true;
   error.value = null;
+  successMsg.value = null;
   
   try {
-    const res = await axios.post('/register', form.value);
+    const payload = {
+      ...form.value,
+      role: roleName.value
+    };
+    const res = await axios.post('/register', payload);
     
-    // Auto login
-    authStore.setAuth(res.data.access_token, res.data.user);
-    
-    // Redirect to dashboard
-    let dashRole = roleName.value === 'Staff Administrasi' ? 'staff' : roleName.value.toLowerCase();
-    router.push(`/dashboard/${dashRole}`);
+    // Redirect to login page for this role with success parameter
+    router.push(`/login/${routeRole.value}?registered=1`);
     
   } catch (err) {
-    error.value = err.response?.data?.message || err.response?.data?.errors?.email?.[0] || 'Gagal mendaftar. Silakan periksa isian Anda.';
+    if (err.response?.data?.errors) {
+      const errs = Object.values(err.response.data.errors).flat();
+      error.value = errs.join(' ');
+    } else if (err.response?.data?.message) {
+      error.value = err.response.data.message;
+    } else {
+      error.value = 'Gagal mendaftar. Silakan periksa isian Anda.';
+    }
   } finally {
     loading.value = false;
   }
@@ -103,6 +159,8 @@ const handleRegister = async () => {
 <style scoped>
 .login-card { padding: 2.5rem; }
 .login-header { text-align: center; margin-bottom: 2rem; }
+.auth-logo { width: 80px; height: auto; margin: 0 auto 1rem; display: block; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
+.academic-title { font-size: 1.25rem; font-weight: 800; color: var(--primary, #10b981); margin-bottom: 0.5rem; letter-spacing: 2px; }
 .login-header h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: white; }
 .w-full { width: 100%; }
 
@@ -113,6 +171,20 @@ const handleRegister = async () => {
   background-position: right 1rem center;
   background-size: 1em;
 }
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid #10b981;
+  color: #34d399;
+  margin-bottom: 1rem;
+}
+
+.text-error {
+  color: #ef4444;
+  font-size: 0.75rem;
+}
+.mt-1 { margin-top: 0.25rem; }
+.block { display: block; }
 
 .auth-links {
   margin-top: 1.5rem;
